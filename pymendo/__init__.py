@@ -15,22 +15,20 @@ cnx = mysql.connector.connect(**connection_config)
 
 now = datetime.datetime.now()
 isocalendar = now.isocalendar()
-chronokey = "%04d-%02d" % (isocalendar[0], isocalendar[1])
+chrono_key = "%04d-%02d" % (isocalendar[0], isocalendar[1])
 
 
 def main():
-    year = now.year
     try:
-        while fetch_data_for(year):
-            year -= 1
+        fetch_data()
     except RuntimeError as re:
         print re
     cnx.close()
 
 
-def fetch_data_for(year):
+def fetch_data():
     page = 0
-    datebetween = "%d-01-01_%d-12-31" % (year, year)
+    datebetween = "%04d-%02d-%02d_%04d-%02d-%02s" % (now.year - 1, now.month, now.day, now.year, now.month, now.day)
     url = 'https://api.jamendo.com/v3.0/tracks/?client_id=4e3f05b4&format=json&order=releasedate_desc' \
           '&include=licenses+musicinfo+stats&datebetween=%s&limit=200' % datebetween
     while True:
@@ -45,10 +43,7 @@ def fetch_data_for(year):
             raise RuntimeError('code : %d' % code)
         results_count = headers['results_count']
         if results_count == 0:
-            if page == 0:
-                return False
-            else:
-                return True
+            return
 
         cursor = cnx.cursor()
         results = data['results']
@@ -88,15 +83,43 @@ def fetch_data_for(year):
             print '%s - %s - %s' % (track_data['releasedate'], track_data['artist_name'], track_data['track_name'])
             cursor.execute(sql, track_data)
 
-            genres = []
-            for tag in result['musicinfo']['tags']['genres']:
-                genres.append(tag)
-            instruments = []
-            for tag in result['musicinfo']['tags']['instruments']:
-                instruments.append(tag)
-            vartags = []
-            for tag in result['musicinfo']['tags']['vartags']:
-                vartags.append(tag)
+            insert_tags('genres', track_data['id'], result['musicinfo']['tags']['genres'])
+            insert_tags('instruments', track_data['id'], result['musicinfo']['tags']['instruments'])
+            insert_tags('vartags', track_data['id'], result['musicinfo']['tags']['vartags'])
+
+            stats_data = {
+                'track_id': track_data['id'],
+                'chrono_key': chrono_key,
+                'downloads': int(result['stats']['rate_downloads_total']),
+                'listens': int(result['stats']['rate_listened_total']),
+                'playlists': int(result['stats']['playlisted']),
+                'favorites': int(result['stats']['favorited']),
+                'likes': int(result['stats']['likes']),
+                'dislikes': int(result['stats']['dislikes']),
+            }
+            sql = ('insert into stats(track_id, chrono_key, downloads, listens, playlists, favorites, likes, dislikes) '
+                   'values(%(track_id)s, %(chrono_key)s, %(downloads)s, %(listens)s, %(playlists)s, %(favorites)s, '
+                   '%(likes)s, %(dislikes)s) ON DUPLICATE KEY UPDATE downloads = %(downloads)s, listens = %(listens)s, '
+                   'playlists = %(playlists)s, favorites = %(favorites)s, likes = %(likes)s, dislikes = %(dislikes)s')
+            cursor.execute(sql, stats_data)
             cnx.commit()
         cursor.close()
         page += 1
+
+
+def insert_tags(tag_type, track_id, tags):
+    cursor = cnx.cursor()
+    tag_data = {
+        'track_id': track_id,
+        'tag_type': tag_type,
+        'tag_value': ''
+    }
+
+    sql = ('delete from tags where track_id = %(track_id)s and tag_type = %(tag_type)s')
+    cursor.execute(sql, tag_data)
+
+    sql = ('insert into tags(track_id, tag_type, tag_value) values(%(track_id)s, %(tag_type)s, %(tag_value)s)')
+    for tag in tags:
+        tag_data.update({'tag_value': tag})
+        cursor.execute(sql, tag_data)
+    cursor.close()
