@@ -2,6 +2,7 @@ import urllib2
 import json
 import datetime
 import mysql.connector
+import sys
 
 
 connection_config = {
@@ -15,10 +16,14 @@ cnx = mysql.connector.connect(**connection_config)
 
 now = datetime.datetime.now()
 isocalendar = now.isocalendar()
-chrono_key = "%04d-%02d" % (isocalendar[0], isocalendar[1])
+daily_key = "%04d-%02d-%02d" % (isocalendar[0], isocalendar[1], isocalendar[2])
+weekly_key = "%04d-%02d" % (isocalendar[0], isocalendar[1])
+quiet = False
 
 
 def main():
+    if sys.argv[1] == "-q":
+        quiet = True
     try:
         fetch_data()
     except RuntimeError as re:
@@ -80,7 +85,8 @@ def fetch_data():
                    'audiodownload = %(audiodownload)s, shorturl = %(shorturl)s, shareurl = %(shareurl)s, '
                    'image = %(image)s, vocalinstrumental = %(vocalinstrumental)s, lang = %(lang)s, ccnc = %(ccnc)s, '
                    'ccnd = %(ccnd)s, ccsa = %(ccsa)s')
-            print '%s - %s - %s' % (track_data['releasedate'], track_data['artist_name'], track_data['track_name'])
+            if not quiet:
+                print '%s - %s - %s' % (track_data['releasedate'], track_data['artist_name'], track_data['track_name'])
             cursor.execute(sql, track_data)
 
             insert_tags('genres', track_data['id'], result['musicinfo']['tags']['genres'])
@@ -89,7 +95,8 @@ def fetch_data():
 
             stats_data = {
                 'track_id': track_data['id'],
-                'chrono_key': chrono_key,
+                'daily_key': daily_key,
+                'weekly_key': weekly_key,
                 'downloads': int(result['stats']['rate_downloads_total']),
                 'listens': int(result['stats']['rate_listened_total']),
                 'playlists': int(result['stats']['playlisted']),
@@ -97,10 +104,11 @@ def fetch_data():
                 'likes': int(result['stats']['likes']),
                 'dislikes': int(result['stats']['dislikes']),
             }
-            sql = ('insert into stats(track_id, chrono_key, downloads, listens, playlists, favorites, likes, dislikes) '
-                   'values(%(track_id)s, %(chrono_key)s, %(downloads)s, %(listens)s, %(playlists)s, %(favorites)s, '
-                   '%(likes)s, %(dislikes)s) ON DUPLICATE KEY UPDATE downloads = %(downloads)s, listens = %(listens)s, '
-                   'playlists = %(playlists)s, favorites = %(favorites)s, likes = %(likes)s, dislikes = %(dislikes)s')
+            sql = ('insert into stats(track_id, daily_key, weekly_key, downloads, listens, playlists, favorites, '
+                   'likes, dislikes) values(%(track_id)s, %(daily_key)s, %(weekly_key)s, %(downloads)s, %(listens)s, '
+                   '%(playlists)s, %(favorites)s, %(likes)s, %(dislikes)s) ON DUPLICATE KEY UPDATE '
+                   'downloads = %(downloads)s, listens = %(listens)s, playlists = %(playlists)s, '
+                   'favorites = %(favorites)s, likes = %(likes)s, dislikes = %(dislikes)s')
             cursor.execute(sql, stats_data)
             cnx.commit()
         cursor.close()

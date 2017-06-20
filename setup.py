@@ -47,5 +47,5 @@ setup(
             'pymendo=pymendo:main',
         ],
     },
-    install_requires=['PyYAML', 'lxml', 'peewee', 'mysql'],
+    install_requires=['PyYAML', 'lxml', 'peewee'],
 )

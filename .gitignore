@@ -2,3 +2,5 @@
 *.egg-info/
 *.iml
 *.pyc
+sql/
+pymendo.tar.gz
