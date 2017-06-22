@@ -86,24 +86,32 @@ def fetch_data():
             insert_tags('instruments', track_data['id'], result['musicinfo']['tags']['instruments'])
             insert_tags('vartags', track_data['id'], result['musicinfo']['tags']['vartags'])
 
+            downloads = int(result['stats']['rate_downloads_total'])
+            listens = int(result['stats']['rate_listened_total'])
+            playlists = int(result['stats']['playlisted'])
+            favorites = int(result['stats']['favorited'])
+            likes = int(result['stats']['likes'])
+            dislikes = int(result['stats']['dislikes'])
+            score = 2 * downloads + listens + playlists + favorites + 2 * likes - 2 * dislikes
             stats_data = {
                 'track_id': track_data['id'],
                 'now': now,
                 'date': now.date(),
                 'weekly_key': weekly_key,
-                'downloads': int(result['stats']['rate_downloads_total']),
-                'listens': int(result['stats']['rate_listened_total']),
-                'playlists': int(result['stats']['playlisted']),
-                'favorites': int(result['stats']['favorited']),
-                'likes': int(result['stats']['likes']),
-                'dislikes': int(result['stats']['dislikes']),
+                'downloads': downloads,
+                'listens': listens,
+                'playlists': playlists,
+                'favorites': favorites,
+                'likes': likes,
+                'dislikes': dislikes,
+                'score': score,
             }
             sql = ('insert into stats(track_id, date_created, date_updated, date, weekly_key, downloads, listens, '
                    'playlists, favorites, likes, dislikes, score) values(%(track_id)s, %(now)s, %(now)s, %(date)s, '
                    '%(weekly_key)s, %(downloads)s, %(listens)s, %(playlists)s, %(favorites)s, %(likes)s, '
-                   '%(dislikes)s) ON DUPLICATE KEY UPDATE date_updated = %(now)s, downloads = %(downloads)s, '
-                   'listens = %(listens)s, playlists = %(playlists)s, favorites = %(favorites)s, likes = %(likes)s, '
-                   'dislikes = %(dislikes)s')
+                   '%(dislikes)s, %(score)s) ON DUPLICATE KEY UPDATE date_updated = %(now)s, '
+                   'downloads = %(downloads)s, listens = %(listens)s, playlists = %(playlists)s, '
+                   'favorites = %(favorites)s, likes = %(likes)s, dislikes = %(dislikes)s, score = %(score)s')
             cursor.execute(sql, stats_data)
             db.cnx.commit()
         cursor.close()
