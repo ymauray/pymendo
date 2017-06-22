@@ -51,7 +51,7 @@ def fetch_data():
                 'artist_id': int(result['artist_id']),
                 'artist_name': result['artist_name'],
                 'album_name': result['album_name'],
-                'album_id': int(result['album_id']),
+                'album_id': int(result['album_id']) if result['album_id'] != '' else 0,
                 'releasedate': datetime.datetime.strptime(result['releasedate'], '%Y-%m-%d'),
                 'album_image': result['album_image'],
                 'audio': result['audio'],
