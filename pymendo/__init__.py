@@ -22,6 +22,7 @@ quiet = False
 
 
 def main():
+    global quiet
     if sys.argv[1] == "-q":
         quiet = True
     try:
@@ -95,7 +96,7 @@ def fetch_data():
 
             stats_data = {
                 'track_id': track_data['id'],
-                'daily_key': daily_key,
+                'date': now.date(),
                 'weekly_key': weekly_key,
                 'downloads': int(result['stats']['rate_downloads_total']),
                 'listens': int(result['stats']['rate_listened_total']),
@@ -104,8 +105,8 @@ def fetch_data():
                 'likes': int(result['stats']['likes']),
                 'dislikes': int(result['stats']['dislikes']),
             }
-            sql = ('insert into stats(track_id, daily_key, weekly_key, downloads, listens, playlists, favorites, '
-                   'likes, dislikes) values(%(track_id)s, %(daily_key)s, %(weekly_key)s, %(downloads)s, %(listens)s, '
+            sql = ('insert into stats(track_id, date, weekly_key, downloads, listens, playlists, favorites, '
+                   'likes, dislikes) values(%(track_id)s, %(date)s, %(weekly_key)s, %(downloads)s, %(listens)s, '
                    '%(playlists)s, %(favorites)s, %(likes)s, %(dislikes)s) ON DUPLICATE KEY UPDATE '
                    'downloads = %(downloads)s, listens = %(listens)s, playlists = %(playlists)s, '
                    'favorites = %(favorites)s, likes = %(likes)s, dislikes = %(dislikes)s')
