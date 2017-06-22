@@ -45,6 +45,7 @@ setup(
     entry_points={
         'console_scripts': [
             'pymendo=pymendo:main',
+            'pymendostats=pymendostats:main',
         ],
     },
     install_requires=['PyYAML', 'lxml', 'peewee'],
