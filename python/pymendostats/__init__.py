@@ -1,4 +1,3 @@
-import pymendo.db
 import datetime
 
 
@@ -16,10 +15,10 @@ def iso_to_gregorian(iso_year, iso_week, iso_day):
 
 
 def main():
-    cursor = pymendo.db.cnx.cursor()
+    cursor = python.pymendo.db.cnx.cursor()
     sql = ("""update stats set score = listens + 2 * downloads + playlists + favorites + 2 * likes - 2 * dislikes""")
     cursor.execute(sql)
-    pymendo.db.cnx.commit()
+    python.pymendo.db.cnx.commit()
     sql = ("""select * from stats order by track_id desc, date desc """)
     cursor.execute(sql)
     for row in cursor:
