@@ -4,3 +4,8 @@
 *.pyc
 sql/
 pymendo.tar.gz
+/web/vendor/
+/web/node_modules/
+/web/composer.lock
+/web/composer.phar
+/web/yarn.lock

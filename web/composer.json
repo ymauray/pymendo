@@ -1,0 +1,19 @@
+{
+    "name": "frenchguy/pymendo",
+    "type": "project",
+    "authors": [
+        {
+            "name": "Yannick Mauray",
+            "email": "yannick.mauray@gmail.com"
+        }
+    ],
+    "require": {
+        "catfan/medoo": "^1.4",
+        "slim/slim": "^3.8"
+    },
+    "autoload": {
+        "psr-0": {
+            "PyMendo": "src/"
+	    }
+    }
+}
