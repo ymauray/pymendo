@@ -63,6 +63,14 @@
     font-size: 15px;
 }
 
+#header.album .info .buttons {
+    margin-top: 10px;
+}
+
+#header.album .info .buttons button {
+    margin-right: 10px;
+}
+
 .tracks .albumtrack .track {
     display: flex;
     border-bottom: 1px solid lightgray;
@@ -73,9 +81,13 @@
     margin: 10px;
 }
 
+.tracks .albumtrack .track .info .title {
+    font-weight: 700;
+}
+
 .tracks .albumtrack .minivignette {
-    width: 60px;
-    height: 60px;
+    width: 70px;
+    height: 70px;
     background-size: cover;
     margin: 10px 0;
 }

@@ -16,6 +16,9 @@
             var clone = track.clone();
             clone.removeAttr("id");
             clone.find(".minivignette").css("background-image", "url('" + t['image'] + "')");
+            clone.find(".title").text(t['track_name']);
+            clone.find(".artist").text(t['artist_name']);
+            clone.find("audio").attr("src", t['audio']);
             tracks.append(clone);
         });
     };
@@ -37,6 +40,11 @@
         var id = getParameter("id");
         var single = getParameter("single");
         $.get("rest/album/" + id + "/" + single).done(backlog);
+        $("#reject-album").on("click", function() {
+            $.get("rest/reject/" + id + "/" + single).done(function() {
+                window.location = "index.html";
+            });
+        });
     });
 
 })(window.jQuery);

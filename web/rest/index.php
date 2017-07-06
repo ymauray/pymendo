@@ -57,4 +57,25 @@ $app->get("/album/{id}/{single}", function (ServerRequestInterface  $request, Re
     $response->getBody()->write(json_encode($result));
     return $response;
 });
+
+/**
+ * Reject : rejeter un album ou un single
+ */
+$app->get("/reject/{id}/{single}", function(ServerRequestInterface $request, ResponseInterface $response) {
+    global $database;
+    $id = $request->getAttribute("id");
+    $single = $request->getAttribute("single");
+    $ids = [];
+    $data = null;
+    if ($single == "0") {
+        $ids = $database->select("tracks", ["id"], ["album_id" => $id]);
+    }
+    else {
+        $ids[] = ["id" => $id];
+    }
+    $response = $response->withHeader('Content-Type', 'application/json');
+    $response->getBody()->write(json_encode($ids));
+    return $response;
+});
+
 $app->run();
