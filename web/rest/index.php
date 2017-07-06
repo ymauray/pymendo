@@ -1,10 +1,9 @@
 <?php
-use Psr\Http\Message\ServerRequestInterface;
+use Medoo\Medoo;
 use Psr\Http\Message\ResponseInterface;
+use Psr\Http\Message\ServerRequestInterface;
 
 require '../vendor/autoload.php';
-
-use Medoo\Medoo;
 
 $database = new Medoo([
     'database_type' => 'mysql',
@@ -16,19 +15,21 @@ $database = new Medoo([
 ]);
 
 $app = new \Slim\App;
-$app->get("/backlog", function (ServerRequestInterface  $request, ResponseInterface  $response) {
+$app->get("/backlog", function (ServerRequestInterface $request, ResponseInterface $response) {
     global $database;
+    /*
     $data = $database->select('quick_album',
         ['id', 'name', 'artist_id', 'artist_name', 'single', 'releasedate', 'image'], [
             'ORDER' => ["releasedate" => "DESC", "single" => "ASC", "id" => "DESC"],
             'LIMIT' => 60
         ]);
-
+    */
+    $data = $database->query("SELECT * FROM quick_album qa LEFT JOIN tags t ON t.track_id = CONCAT('1', qa.single, qa.id) HAVING tag_type IS null OR tag_type != 'pymendo' ORDER BY releasedate DESC, single ASC, id DESC LIMIT 60;")->fetchAll();
     $response = $response->withHeader('Content-Type', 'application/json');
     $response->getBody()->write(json_encode($data));
     return $response;
 });
-$app->get("/album/{id}/{single}", function (ServerRequestInterface  $request, ResponseInterface  $response) {
+$app->get("/album/{id}/{single}", function (ServerRequestInterface $request, ResponseInterface $response) {
     global $database;
     $id = $request->getAttribute("id");
     $single = $request->getAttribute("single");
@@ -44,8 +45,7 @@ $app->get("/album/{id}/{single}", function (ServerRequestInterface  $request, Re
                 'id' => $id,
             ]);
         $result['tracks'] = $data;
-    }
-    else {
+    } else {
         $data = $database->select('tracks',
             ['track_name', 'artist_name', 'image', 'audio', 'audiodownload', 'shorturl'], [
                 'album_id' => $id,
@@ -61,18 +61,12 @@ $app->get("/album/{id}/{single}", function (ServerRequestInterface  $request, Re
 /**
  * Reject : rejeter un album ou un single
  */
-$app->get("/reject/{id}/{single}", function(ServerRequestInterface $request, ResponseInterface $response) {
+$app->get("/reject/{id}/{single}", function (ServerRequestInterface $request, ResponseInterface $response) {
     global $database;
     $id = $request->getAttribute("id");
     $single = $request->getAttribute("single");
-    $ids = [];
-    $data = null;
-    if ($single == "0") {
-        $ids = $database->select("tracks", ["id"], ["album_id" => $id]);
-    }
-    else {
-        $ids[] = ["id" => $id];
-    }
+    $database->delete("tags", ["AND" => ["tag_type" => "pymendo", "track_id" => "1" . $single . $id]]);
+    $database->insert("tags", ["track_id" => "1" . $single . $id, "tag_type" => "pymendo", "tag_value" => "rejectedsss"]);
     $response = $response->withHeader('Content-Type', 'application/json');
     $response->getBody()->write(json_encode($ids));
     return $response;
