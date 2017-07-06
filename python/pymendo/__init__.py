@@ -115,6 +115,37 @@ def fetch_data():
                    'favorites = %(favorites)s, likes = %(likes)s, dislikes = %(dislikes)s, score = %(score)s')
             cursor.execute(sql, stats_data)
             db.cnx.commit()
+        sql = ('INSERT INTO weekly_sum SELECT s.track_id, s.weekly_key, SUM(s.score) score FROM stats s WHERE '
+               'weekly_key = DATE_FORMAT(NOW(), "%x-%v") GROUP BY s.track_id, s.weekly_key ON DUPLICATE KEY UPDATE '
+               'score = VALUES(score)')
+        cursor.execute(sql)
+        sql = ('INSERT INTO weekly_score SELECT ws0.weekly_key, @monday:=STR_TO_DATE(CONCAT(ws0.weekly_key, "-1"), '
+               '"%x-%v-%w") monday, ws0.track_id, @score0:=ws0.score score0, @score1:=IFNULL(ws1.score, 0) score1, '
+               '@score2:=IFNULL(ws2.score, 0) score2, @score3:=IFNULL(ws3.score, 0) score3, '
+               '4 * @score0 + 3 * @score1 + 2 * @score2 + @score3 weekly_score FROM weekly_sum ws0 LEFT JOIN '
+               'weekly_sum ws1 on ws0.track_id = ws1.track_id AND DATE_FORMAT(DATE_ADD(@monday, INTERVAL -1 WEEK), '
+               '"%x-%v") = ws1.weekly_key LEFT JOIN weekly_sum ws2 on ws0.track_id = ws2.track_id AND '
+               'DATE_FORMAT(DATE_ADD(@monday, INTERVAL -2 WEEK), "%x-%v") = ws2.weekly_key LEFT JOIN weekly_sum ws3 '
+               'ON ws0.track_id = ws3.track_id AND DATE_FORMAT(DATE_ADD(@monday, INTERVAL -3 WEEK), "%x-%v") = '
+               'ws3.weekly_key WHERE ws0.weekly_key = DATE_FORMAT(NOW(), "%x-%v") ORDER BY weekly_key DESC, '
+               'weekly_score DESC ON DUPLICATE KEY UPDATE score0 = VALUES(score0), score1 = VALUES(score1), '
+               'score2 = VALUES(score2), score3 = VALUES(score3), weekly_score = VALUES(weekly_score)')
+        cursor.execute(sql)
+        sql = ('INSERT INTO weekly_charts SELECT ws.weekly_key, @row:=@row+1 position, t.artist_name, t.track_name, '
+               '(CASE t.album_id WHEN 0 THEN CONCAT(t.track_name, " (Single)") ELSE t.album_name END) album_name, '
+               'ws.track_id, ws.weekly_score FROM (SELECT @row := 0) r, weekly_score ws LEFT JOIN tracks t ON '
+               't.id = ws.track_id WHERE ws.weekly_key = DATE_FORMAT(NOW(), "%x-%v") ORDER BY ws.weekly_score DESC '
+               'ON DUPLICATE KEY UPDATE artist_name = VALUES(artist_name), track_name = VALUES(track_name), '
+               'album_name = VALUES(album_name), track_id = VALUES(track_id), weekly_score = VALUES(weekly_score)')
+        cursor.execute(sql)
+        sql = ('INSERT INTO weekly_progression SELECT wc0.weekly_key, wc0.track_id, wc0.position position0, '
+               'wc1.position position1, wc1.position - wc0.position progression FROM weekly_charts wc0 '
+               'LEFT JOIN weekly_charts wc1 ON wc1.track_id = wc0.track_id AND wc1.weekly_key = '
+               'DATE_FORMAT(DATE_ADD(STR_TO_DATE(CONCAT(wc0.weekly_key, "-1"), "%x-%v-%w"), INTERVAL -1 WEEK), '
+               '"%x-%v") WHERE wc0.weekly_key = DATE_FORMAT(NOW(), "%x-%v") ORDER BY wc0.position ASC '
+               'ON DUPLICATE KEY UPDATE position0 = VALUES(position0), position1 = VALUES(position0), '
+               'progression = VALUES(progression)')
+        cursor.execute(sql)
         cursor.close()
         page += 1
 
@@ -127,10 +158,10 @@ def insert_tags(tag_type, track_id, tags):
         'tag_value': ''
     }
 
-    sql = ('delete from tags where track_id = %(track_id)s and tag_type = %(tag_type)s')
+    sql = 'delete from tags where track_id = %(track_id)s and tag_type = %(tag_type)s'
     cursor.execute(sql, tag_data)
 
-    sql = ('insert into tags(track_id, tag_type, tag_value) values(%(track_id)s, %(tag_type)s, %(tag_value)s)')
+    sql = 'insert into tags(track_id, tag_type, tag_value) values(%(track_id)s, %(tag_type)s, %(tag_value)s)'
     for tag in tags:
         tag_data.update({'tag_value': tag})
         cursor.execute(sql, tag_data)
