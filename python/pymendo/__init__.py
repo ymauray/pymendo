@@ -24,11 +24,12 @@ def main():
 
 def fetch_data():
     page = 0
-    datebetween = "%04d-%02d-%02d_%04d-%02d-%02s" % (now.year - 1, now.month, now.day, now.year, now.month, now.day)
+    datebetween = "%04d-%02d-%02d_%04d-%02d-%02d" % (now.year - 1, now.month, now.day, now.year, now.month, now.day)
     url = ('https://api.jamendo.com/v3.0/tracks/?client_id=4e3f05b4&format=json&type=single+albumtrack&order='
            'releasedate_desc&include=licenses+musicinfo+stats&datebetween=%s&limit=200') % datebetween
     while True:
-        response = urllib2.urlopen("%s&offset=%d" % (url, 200 * page))
+        offseturl = "%s&offset=%d" % (url, 200 * page)
+        response = urllib2.urlopen(offseturl)
         data = json.load(response)
         headers = data['headers']
         status = headers['status']
