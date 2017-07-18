@@ -46,6 +46,7 @@ setup(
         'console_scripts': [
             'pymendo=pymendo:main',
             'pymendostats=pymendostats:main',
+            'pymendopublish=pymendopublish:main',
         ],
     },
     install_requires=['PyYAML', 'lxml', 'peewee'],
