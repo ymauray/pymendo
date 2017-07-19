@@ -4,6 +4,8 @@ import datetime
 import locale
 import urllib2
 import requests
+import sys
+
 import pymendo
 
 
@@ -18,13 +20,27 @@ headers = {
 
 def main():
     locale.setlocale(locale.LC_TIME, 'fr_CH.utf8')
-
     cursor = pymendo.db.cnx.cursor()
-    sql = "SELECT MAX(c.weekly_key) FROM weekly_charts c"
-    cursor.execute(sql)
-    key = next(x for x in cursor)
-    sql = ("SELECT @date:='%s-1', @from:=DATE_ADD(STR_TO_DATE(@date, '%%x-%%v-%%w'), INTERVAL -7 DAY), "
-           "DATE_ADD(@from, INTERVAL 6 DAY), DATE_FORMAT(@from, '%%x-%%v')") % key[0]
+
+    if len(sys.argv) > 1:
+        key = sys.argv[1]
+        sql = "SELECT COUNT(1) FROM weekly_charts c WHERE c.weekly_key = '%s'" % key
+        cursor.execute(sql)
+        count = next(row for row in cursor)
+        if count == 0:
+            raise ValueError(u"La clé %s n'existe pas" % key)
+        sql = "SELECT MAX(c.weekly_key) FROM weekly_charts c WHERE c.weekly_key = '%s'" % key
+        cursor.execute(sql)
+        key = next(x for x in cursor)
+        sql = ("SELECT @date:='%s-1', @from:=STR_TO_DATE(@date, '%%x-%%v-%%w'), "
+               "DATE_ADD(@from, INTERVAL 6 DAY), DATE_FORMAT(@from, '%%x-%%v')") % key[0]
+    else:
+        sql = "SELECT MAX(c.weekly_key) FROM weekly_charts c"
+        cursor.execute(sql)
+        key = next(x for x in cursor)
+        sql = ("SELECT @date:='%s-1', @from:=DATE_ADD(STR_TO_DATE(@date, '%%x-%%v-%%w'), INTERVAL -7 DAY), "
+               "DATE_ADD(@from, INTERVAL 6 DAY), DATE_FORMAT(@from, '%%x-%%v')") % key[0]
+
     cursor.execute(sql)
     r = next(row for row in cursor)
     sow = datetime.datetime.strptime(r[1], '%Y-%m-%d')
@@ -37,25 +53,30 @@ def main():
     eow_y = eow.__format__("%Y")
     key = r[3]
 
+    print
+    print u"Clé : %s" % key
+    print
+
     if sow_y != eow_y:
         titre = "Semaine du %s %s %s au %s %s %s" % (sow_d, sow_m, sow_y, eow_d, eow_m, eow_y)
     elif sow_m != eow_m:
         titre = "Semaine du %s %s au %s %s %s" % (sow_d, sow_m, eow_d, eow_m, eow_y)
     else:
         titre = "Semaine du %s au %s %s %s" % (sow_d, eow_d, eow_m, eow_y)
-    print
     print titre
     print
 
-    sql = ("SELECT CONCAT('|', c.position, '|', IF(p.progression < 0, p.progression, IF(p.progression > 0, "
-           "CONCAT('+', p.progression), '-')), '|', CONCAT(c.artist_name, ' / ', c.track_name), '|', "
-           "c.weekly_score, '|') FROM weekly_charts c LEFT JOIN weekly_progression p ON p.weekly_key = c.weekly_key "
-           "AND p.track_id = c.track_id WHERE c.weekly_key = '%s' LIMIT 25") % key
+    sql = ("SELECT c.position pos, IF(p.progression < 0, p.progression, IF(p.progression > 0, "
+           "CONCAT('+', p.progression), '-')) prog, CONCAT(c.artist_name, ' / ', c.track_name) track, "
+           "c.weekly_score score, t.shareurl FROM weekly_charts c LEFT JOIN weekly_progression p ON "
+           "p.weekly_key = c.weekly_key AND p.track_id = c.track_id, tracks t WHERE c.weekly_key = '%s' "
+           "AND t.id = c.track_id ORDER BY pos ASC LIMIT 25") % key
+
     cursor.execute(sql)
     content = "|Pos.|Prog.|Artite / Titre|Score|\n"
     content += "|-:|-:|:-|-:|\n"
     for row in cursor:
-        content += row[0] + "\n"
+        content += "|%s|%s|[%s](%s)|%s|\n" % (row[0], row[1], row[2], row[4], row[3])
     print content
     print
 
