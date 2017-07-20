@@ -22,7 +22,8 @@ def main():
     if os.path.isfile(dotfile):
         with open(dotfile) as configfile:
             config = json.load(configfile)
-            token = config['publish']['wordpress_token']
+            token = config['publish']['auth_token']
+            wordpress = config['publish']['wordpress']
             if 'locale' in config:
                 loc = config['locale']
                 print "Locale: %s" % loc
@@ -95,12 +96,12 @@ def main():
     print content
     print
 
-    url = "http://localhost/er/wp-json/wp/v2/charts?slug=%s" % key
+    url = "%s/wp-json/wp/v2/charts?slug=%s" % (wordpress, key)
     response = requests.get(url, headers=headers)
     data = response.json()
     if len(data) == 0:
         print "Création de l'article"
-        url = "http://localhost/er/wp-json/wp/v2/charts"
+        url = "%s/wp-json/wp/v2/charts" % wordpress
         requests.post(url, headers=headers, data={
             'title': titre,
             'slug': key,
@@ -110,7 +111,7 @@ def main():
     else:
         print "Mise à jour de l'article"
         postid = data[0]['id']
-        url = "http://localhost/er/wp-json/wp/v2/charts/%s" % postid
+        url = "%s/wp-json/wp/v2/charts/%s" % (wordpress, postid)
         requests.post(url, headers=headers, data={
             'title': titre,
             'status': 'publish',
