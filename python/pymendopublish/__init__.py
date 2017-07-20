@@ -1,7 +1,9 @@
 # -*- coding: utf-8 -*-
 
 import datetime
+import json
 import locale
+import os
 import urllib2
 import requests
 import sys
@@ -13,13 +15,26 @@ handler = urllib2.HTTPHandler(debuglevel=1)
 opener = urllib2.build_opener(handler)
 urllib2.install_opener(opener)
 
-headers = {
-    'Authorization': 'Basic eWFubmljazp2dFVMT3JsZ2Zac3YwOTZuZjNnV2FFVDM='
-}
-
 
 def main():
-    locale.setlocale(locale.LC_TIME, 'fr_CH.utf8')
+    home = os.path.expanduser("~")
+    dotfile = "%s%s%s" % (home, os.path.sep, ".pymendo.json")
+    if os.path.isfile(dotfile):
+        with open(dotfile) as configfile:
+            config = json.load(configfile)
+            token = config['publish']['wordpress_token']
+            if 'locale' in config:
+                loc = config['locale']
+                print "Locale: %s" % loc
+                locale.setlocale(locale.LC_TIME, loc)
+    else:
+        print "%s not found, exiting" % dotfile
+        sys.exit(-1)
+
+    headers = {
+        'Authorization': 'Basic %s' % token
+    }
+
     cursor = pymendo.db.cnx.cursor()
 
     if len(sys.argv) > 1:
