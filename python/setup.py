@@ -47,6 +47,7 @@ setup(
             'pymendo=pymendo:main',
             'pymendostats=pymendostats:main',
             'pymendopublish=pymendopublish:main',
+            'pymendofetch=pymendofetch:main'
         ],
     },
     install_requires=['PyYAML', 'lxml', 'peewee'],
