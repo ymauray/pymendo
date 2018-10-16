@@ -5,7 +5,8 @@
   "author": "Yannick Mauray",
   "license": "GPLv3",
   "dependencies": {
-    "bootstrap": "^3.3.7",
+    "bootstrap": ">=4.1.2",
+    "popper.js": ">=1.14.3",
     "jquery": "^3.2.1",
     "jquery-ui": "^1.12.1"
   }
